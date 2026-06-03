@@ -5,8 +5,8 @@
   "main": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "dev": "tsx watch index.ts",
-    "start": "tsx index.ts"
+    "dev": "npx tsx watch index.ts",
+    "start": "npx tsx index.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "2.0.56",
