@@ -74,7 +74,7 @@ function LinkMasonry({
     <div
       ref={setNodeRef}
       className={cn(
-        "border border-solid border-neutral-content bg-base-200 shadow-md hover:shadow-none duration-100 rounded-xl relative group",
+        "border border-solid border-neutral-content bg-base-200 shadow-md hover:shadow-none duration-100 rounded-xl relative group overflow-hidden",
         isSelected && "border-primary bg-base-300"
       )}
       onClick={() =>
@@ -96,15 +96,14 @@ function LinkMasonry({
         >
           {show.image && formatAvailable(link, "preview") && (
             <div>
-              <div className="relative rounded-t-xl overflow-hidden">
+              <div className="relative rounded-t-xl aspect-video overflow-hidden">
                 {formatAvailable(link, "preview") ? (
                   <Image
                     src={`/api/v1/archives/${link.id}?format=${ArchivedFormat.jpeg}&preview=true&updatedAt=${link.updatedAt}`}
                     width={1280}
                     height={720}
                     alt=""
-                    className={`rounded-t-xl select-none object-cover z-10 ${imageHeightClass} w-full shadow opacity-80 scale-105`}
-                    style={show.icon ? { filter: "blur(1px)" } : undefined}
+                    className="rounded-t-xl select-none object-cover z-10 aspect-video w-full shadow opacity-80"
                     draggable="false"
                     onError={(e) => {
                       const target = e.target as HTMLElement;
@@ -114,7 +113,7 @@ function LinkMasonry({
                   />
                 ) : link.preview === "unavailable" ? null : (
                   <div
-                    className={`duration-100 ${imageHeightClass} bg-opacity-80 skeleton rounded-none`}
+                    className="duration-100 aspect-video w-full bg-opacity-80 skeleton rounded-none"
                   ></div>
                 )}
                 {show.icon && (

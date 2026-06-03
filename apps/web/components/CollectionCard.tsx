@@ -11,6 +11,8 @@ import EditCollectionModal from "./ModalContent/EditCollectionModal";
 import EditCollectionSharingModal from "./ModalContent/EditCollectionSharingModal";
 import DeleteCollectionModal from "./ModalContent/DeleteCollectionModal";
 import { useTranslation } from "next-i18next";
+import toast from "react-hot-toast";
+import ConfirmationModal from "./ConfirmationModal";
 import { useUser } from "@linkwarden/router/user";
 import {
   DropdownMenu,
@@ -70,6 +72,23 @@ export default function CollectionCard({
     useState(false);
   const [deleteCollectionModal, setDeleteCollectionModal] = useState(false);
 
+  const refreshCollection = async () => {
+    const load = toast.loading(t("sending_request"));
+
+    const response = await fetch(`/api/v1/collections/${collection.id}/archive`, {
+      method: "PUT",
+    });
+
+    const data = await response.json();
+    toast.dismiss(load);
+
+    if (response.ok) {
+      toast.success(t("links_are_being_represerved"));
+    } else {
+      toast.error(data.response);
+    }
+  };
+
   return (
     <div className="relative">
       <DropdownMenu>
@@ -102,6 +121,13 @@ export default function CollectionCard({
             <i className="bi-globe" />
             {permissions === true ? t("share_and_collaborate") : t("view_team")}
           </DropdownMenuItem>
+
+          {(permissions === true || permissions?.canUpdate) && (
+            <DropdownMenuItem onSelect={() => refreshCollection()}>
+              <i className="bi-arrow-clockwise" />
+              {t("refresh")}
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuSeparator />
 
