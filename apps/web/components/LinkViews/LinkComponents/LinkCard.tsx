@@ -36,6 +36,7 @@ type Props = {
   toggleSelected: (id: number) => void;
   imageHeightClass: string;
   editMode?: boolean;
+  draggableId?: string;
 };
 
 function LinkCard({
@@ -49,9 +50,10 @@ function LinkCard({
   toggleSelected,
   imageHeightClass,
   editMode,
+  draggableId,
 }: Props) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: link.id?.toString() ?? "",
+    id: draggableId ?? link.id?.toString() ?? "",
     data: {
       linkId: link.id,
       link,
@@ -71,7 +73,7 @@ function LinkCard({
     <div
       ref={setNodeRef}
       className={cn(
-        "border border-solid border-neutral-content bg-base-200 shadow-md hover:shadow-none duration-100 rounded-xl relative group",
+        "border border-solid border-neutral-content bg-base-200 shadow-md hover:shadow-none duration-100 rounded-xl relative group overflow-hidden h-full",
         isSelected && "border-primary bg-base-300",
         isDragging ? "opacity-30" : "opacity-100",
         "relative group touch-manipulation select-none"
@@ -96,7 +98,7 @@ function LinkCard({
           {show.image && (
             <div>
               <div
-                className={`relative rounded-t-xl ${imageHeightClass} overflow-hidden`}
+                className="relative rounded-t-xl aspect-video overflow-hidden"
               >
                 {formatAvailable(link, "preview") ? (
                   <Image
@@ -104,8 +106,7 @@ function LinkCard({
                     width={1280}
                     height={720}
                     alt=""
-                    className={`rounded-t-xl select-none object-cover z-10 ${imageHeightClass} w-full shadow opacity-80 scale-105`}
-                    style={show.icon ? { filter: "blur(1px)" } : undefined}
+                    className="rounded-t-xl select-none object-cover z-10 aspect-video w-full shadow opacity-80"
                     draggable="false"
                     onError={(e) => {
                       const target = e.target as HTMLElement;
@@ -115,11 +116,11 @@ function LinkCard({
                   />
                 ) : link.preview === "unavailable" ? (
                   <div
-                    className={`bg-gray-50 ${imageHeightClass} bg-opacity-80`}
+                    className="bg-gray-50 aspect-video w-full bg-opacity-80"
                   ></div>
                 ) : (
                   <div
-                    className={`${imageHeightClass} bg-opacity-80 skeleton rounded-none`}
+                    className="aspect-video w-full bg-opacity-80 skeleton rounded-none"
                   ></div>
                 )}
                 {show.icon && (

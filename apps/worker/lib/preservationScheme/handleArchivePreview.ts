@@ -14,10 +14,46 @@ type LinksAndCollectionAndOwner = Link & {
   };
 };
 
+const getYoutubeId = (url: string): string | null => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
 const handleArchivePreview = async (
   link: LinksAndCollectionAndOwner,
   page: Page
 ) => {
+  // Direct High-Quality YouTube Thumbnail Fetching
+  if (link.url) {
+    const youtubeId = getYoutubeId(link.url);
+    if (youtubeId) {
+      try {
+        const maxResUrl = `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+        let imgResponse = await fetch(maxResUrl);
+        if (!imgResponse.ok) {
+          // Fall back to hqdefault
+          const hqUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+          imgResponse = await fetch(hqUrl);
+        }
+        if (imgResponse.ok) {
+          const arrayBuffer = await imgResponse.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const previewGenerated = await generatePreview(
+            buffer,
+            link.collectionId,
+            link.id
+          );
+          if (previewGenerated) {
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching YouTube thumbnail directly:", error);
+      }
+    }
+  }
+
   let ogImageUrl = await page.evaluate(() => {
     const metaTag = document.querySelector('meta[property="og:image"]');
     return metaTag ? (metaTag as any).content : null;
@@ -58,7 +94,7 @@ const handleArchivePreview = async (
 
   if (!previewGenerated && !link.preview?.startsWith("archive")) {
     await page
-      .screenshot({ type: "jpeg", quality: 20 })
+      .screenshot({ type: "jpeg", quality: 80 })
       .then(async (screenshot) => {
         if (
           Buffer.byteLength(screenshot) >

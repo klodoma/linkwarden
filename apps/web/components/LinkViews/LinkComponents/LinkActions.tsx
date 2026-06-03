@@ -51,8 +51,6 @@ export default function LinkActions({
 
   const [editLinkModal, setEditLinkModal] = useState(false);
   const [deleteLinkModal, setDeleteLinkModal] = useState(false);
-  const [refreshPreservationsModal, setRefreshPreservationsModal] =
-    useState(false);
 
   const deleteLink = useDeleteLink({ toast, t });
 
@@ -123,6 +121,14 @@ export default function LinkActions({
               </DropdownMenuItem>
             )}
 
+            {(permissions === true || permissions?.canUpdate) && (
+              <DropdownMenuItem onSelect={() => updateArchive()}>
+                <i className="bi-arrow-clockwise" />
+
+                {t("refresh")}
+              </DropdownMenuItem>
+            )}
+
             {(permissions === true || permissions?.canDelete) && (
               <>
                 <DropdownMenuSeparator />
@@ -150,7 +156,7 @@ export default function LinkActions({
         <LinkModal
           onClose={() => setEditLinkModal(false)}
           onPin={() => pinLink(link)}
-          onUpdateArchive={() => setRefreshPreservationsModal(true)}
+          onUpdateArchive={() => updateArchive()}
           onDelete={() => setDeleteLinkModal(true)}
           link={link}
           activeMode="edit"
@@ -162,26 +168,11 @@ export default function LinkActions({
           activeLink={link}
         />
       )}
-      {refreshPreservationsModal && (
-        <ConfirmationModal
-          toggleModal={() => {
-            setRefreshPreservationsModal(false);
-          }}
-          onConfirmed={async () => {
-            await updateArchive();
-          }}
-          title={t("refresh_preserved_formats")}
-        >
-          <p className="mb-5">
-            {t("refresh_preserved_formats_confirmation_desc")}
-          </p>
-        </ConfirmationModal>
-      )}
       {linkModal && (
         <LinkModal
           onClose={() => setLinkModal(false)}
           onPin={() => pinLink(link)}
-          onUpdateArchive={() => setRefreshPreservationsModal(true)}
+          onUpdateArchive={() => updateArchive()}
           onDelete={() => setDeleteLinkModal(true)}
           link={link}
         />

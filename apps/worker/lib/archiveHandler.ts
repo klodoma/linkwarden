@@ -184,7 +184,8 @@ export default async function archiveHandler(
           if (
             archivalSettings.archiveAsMonolith &&
             !link.monolith &&
-            link.url
+            link.url &&
+            isWebpageForMonolith(link.url)
           ) {
             await handleMonolith(link, content, abortController.signal).catch(
               (err) => {
@@ -260,4 +261,22 @@ async function determineLinkType(
   });
 
   return { linkType, imageExtension };
+}
+
+const DYNAMIC_PLATFORMS = [
+  "youtube.com", "youtu.be",
+  "twitter.com", "x.com",
+  "instagram.com", "instagr.am",
+  "tiktok.com",
+  "vimeo.com"
+];
+
+function isWebpageForMonolith(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    return !DYNAMIC_PLATFORMS.some(platform => host.endsWith(platform) || host.includes("." + platform));
+  } catch {
+    return false;
+  }
 }
