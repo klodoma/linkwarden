@@ -25,6 +25,18 @@ import { IconWeight } from "@phosphor-icons/react";
 import Droppable from "./Droppable";
 import { cn } from "@linkwarden/lib/utils";
 import { Active, useDndContext } from "@dnd-kit/core";
+import usePermissions from "@/hooks/usePermissions";
+import EditCollectionModal from "./ModalContent/EditCollectionModal";
+import EditCollectionSharingModal from "./ModalContent/EditCollectionSharingModal";
+import DeleteCollectionModal from "./ModalContent/DeleteCollectionModal";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "./ui/button";
 
 interface ExtendedTreeItem extends TreeItem {
   data: Collection;
@@ -279,9 +291,13 @@ const CollectionListing = () => {
     return (
       <Tree
         tree={tree}
-        renderItem={(itemProps) =>
-          renderItem({ ...itemProps }, router.asPath, droppableActive)
-        }
+        renderItem={(itemProps) => (
+          <CollectionItem
+            {...itemProps}
+            currentPath={router.asPath}
+            droppableActive={droppableActive}
+          />
+        )}
         onExpand={onExpand}
         onCollapse={onCollapse}
         onDragEnd={onDragEnd}
@@ -293,12 +309,42 @@ const CollectionListing = () => {
 
 export default CollectionListing;
 
-const renderItem = (
-  { item, onExpand, onCollapse, provided }: RenderItemParams,
-  currentPath: string,
-  droppableActive: Active | null
-) => {
+const CollectionItem = ({
+  item,
+  onExpand,
+  onCollapse,
+  provided,
+  currentPath,
+  droppableActive,
+}: RenderItemParams & {
+  currentPath: string;
+  droppableActive: Active | null;
+}) => {
   const collection = item.data;
+  const { t } = useTranslation();
+  const permissions = usePermissions(collection.id as number);
+
+  const [editCollectionModal, setEditCollectionModal] = useState(false);
+  const [editCollectionSharingModal, setEditCollectionSharingModal] =
+    useState(false);
+  const [deleteCollectionModal, setDeleteCollectionModal] = useState(false);
+
+  const refreshCollection = async () => {
+    const load = toast.loading(t("sending_request"));
+
+    const response = await fetch(`/api/v1/collections/${collection.id}/archive`, {
+      method: "PUT",
+    });
+
+    const data = await response.json();
+    toast.dismiss(load);
+
+    if (response.ok) {
+      toast.success(t("links_are_being_represerved"));
+    } else {
+      toast.error(data.response);
+    }
+  };
 
   return (
     <Droppable
@@ -308,7 +354,7 @@ const renderItem = (
         id: collection.id,
         ownerId: collection.ownerId,
       }}
-      className="group"
+      className="group relative"
     >
       <div
         ref={provided.innerRef}
@@ -322,7 +368,7 @@ const renderItem = (
               : droppableActive
                 ? "select-none"
                 : "hover:bg-neutral/20",
-            "duration-100 flex gap-1 items-center pr-2 pl-1 rounded-md"
+            "duration-100 flex gap-1 items-center pr-2 pl-1 rounded-md relative"
           )}
         >
           {Dropdown(item as ExtendedTreeItem, onExpand, onCollapse)}
@@ -350,7 +396,7 @@ const renderItem = (
                 ></i>
               )}
 
-              <p className="truncate w-full">{collection.name}</p>
+              <p className="truncate w-full pr-8">{collection.name}</p>
 
               {collection.isPublic && (
                 <i
@@ -358,13 +404,93 @@ const renderItem = (
                   title="This collection is being shared publicly."
                 ></i>
               )}
-              <div className="drop-shadow text-neutral text-xs">
+              <div className="drop-shadow text-neutral text-xs pr-6 group-hover:hidden">
                 {collection._count?.links}
               </div>
             </div>
           </Link>
+
+          <div className="absolute right-1 top-1/2 -translate-y-1/2 z-20 opacity-0 group-hover:opacity-100 focus-within:opacity-100 duration-100 flex items-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-neutral cursor-pointer hover:bg-neutral-content/20"
+                >
+                  <i title="More" className="bi-three-dots text-lg" />
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent
+                sideOffset={4}
+                side="bottom"
+                align="end"
+                className="z-[30]"
+              >
+                {permissions === true && (
+                  <DropdownMenuItem onSelect={() => setEditCollectionModal(true)}>
+                    <i className="bi-pencil-square" />
+                    {t("edit_collection_info")}
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuItem
+                  onSelect={() => setEditCollectionSharingModal(true)}
+                >
+                  <i className="bi-globe" />
+                  {permissions === true ? t("share_and_collaborate") : t("view_team")}
+                </DropdownMenuItem>
+
+                {(permissions === true || permissions?.canUpdate) && (
+                  <DropdownMenuItem onSelect={() => refreshCollection()}>
+                    <i className="bi-arrow-clockwise" />
+                    {t("refresh")}
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onSelect={() => setDeleteCollectionModal(true)}
+                  className="text-error"
+                >
+                  {permissions === true ? (
+                    <>
+                      <i className="bi-trash" />
+                      {t("delete_collection")}
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi-box-arrow-left" />
+                      {t("leave_collection")}
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
+
+      {editCollectionModal && (
+        <EditCollectionModal
+          onClose={() => setEditCollectionModal(false)}
+          activeCollection={collection as any}
+        />
+      )}
+      {editCollectionSharingModal && (
+        <EditCollectionSharingModal
+          onClose={() => setEditCollectionSharingModal(false)}
+          activeCollection={collection as any}
+        />
+      )}
+      {deleteCollectionModal && (
+        <DeleteCollectionModal
+          onClose={() => setDeleteCollectionModal(false)}
+          activeCollection={collection as any}
+        />
+      )}
     </Droppable>
   );
 };
